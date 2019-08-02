@@ -153,70 +153,77 @@ public class DatabaseConverter {
      */
     public static void main(String[] args) {
         
-        if(args.length != 3){
-            System.out.println("ERROR, NEED 3 ARGUMENTS:");
-            System.out.println("   NAME OF INPUT CSV FILE (WITHOUT .csv exstension");
-            System.out.println("   ADDRESS OF DATABASE");
-            System.out.println("   NAME OF DATABASE TABLE");
-            return;
-        }
-        
-        
-        
-        
-        DatabaseConverter db = new DatabaseConverter();
-        
-        FileWriter bad_file = null;
-        
-        int num_recieved = 0;
-        int num_success = 0;
-        int num_failure = 0;
-        
-        String fileName = args[0] + ".db";
-        String address = "jdbc:sqlite:"+args[1];
-        String table = args[2];
-        
-        
         try {
-            bad_file = new FileWriter(args[0]+"-bad.csv");
-        } catch (IOException ex) {
-            Logger.getLogger(DatabaseConverter.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        
-        //Create the database and table, or connect to it if it already exists
-        
-        String url = address+fileName;
-        db.createNewDatabase(fileName,address);
-        db.createNewTable(url,table);
-        System.out.println("READING FILE");
-        //Read the cvs file line by line
-        try (BufferedReader br = new BufferedReader(new FileReader(args[0]+".csv"))) {
-            String line;
-            while ((line = br.readLine()) != null) {
-                //Prevent the collumn header from being read
-                if("A,B,C,D,E,F,G,H,I,J".equals(line)){
-                    line = br.readLine();
-                    if(line == null){
-                        return;
-                    }
-                }
-                //Split the line into values that are loaded into an array
-                String[] values = line.split(",(?=([^\"]|\"[^\"]*\")*$)");
-                num_recieved++;
-                //Only insert it into the database if there is 10 items
-                if(values.length == 10){
-                    //Prevent insertion if any of the items are empty
-                    boolean empty_found = false;
-                    for(int i = 0;i < 10;i++){
-                        if(values[i].length() == 0){
-                           empty_found = true;
-                           break;
+            
+            if(args.length != 3){
+                System.out.println("ERROR, NEED 3 ARGUMENTS:");
+                System.out.println("   NAME OF INPUT CSV FILE (WITHOUT .csv exstension");
+                System.out.println("   ADDRESS OF DATABASE");
+                System.out.println("   NAME OF DATABASE TABLE");
+                return;
+            }
+            
+            
+            
+            DatabaseConverter db = new DatabaseConverter();
+            
+            FileWriter bad_file = null;
+            
+            int num_recieved = 0;
+            int num_success = 0;
+            int num_failure = 0;
+            
+            String fileName = args[0] + ".db";
+            String address = "jdbc:sqlite:"+args[1];
+            String table = args[2];
+            
+            
+            try {
+                bad_file = new FileWriter(args[0]+"-bad.csv");
+            } catch (IOException ex) {
+                Logger.getLogger(DatabaseConverter.class.getName()).log(Level.SEVERE, null, ex);
+            }
+            
+            //Create the database and table, or connect to it if it already exists
+            
+            String url = address+fileName;
+            db.createNewDatabase(fileName,address);
+            db.createNewTable(url,table);
+            System.out.println("READING FILE");
+            //Read the cvs file line by line
+            try (BufferedReader br = new BufferedReader(new FileReader(args[0]+".csv"))) {
+                String line;
+                while ((line = br.readLine()) != null) {
+                    //Prevent the collumn header from being read
+                    if("A,B,C,D,E,F,G,H,I,J".equals(line)){
+                        line = br.readLine();
+                        if(line == null){
+                            return;
                         }
                     }
-                    //Insert the values into a new row of the database table
-                    if(!empty_found){
-                        db.insert(values,url,table);
-                        num_success++;
+                    //Split the line into values that are loaded into an array
+                    String[] values = line.split(",(?=([^\"]|\"[^\"]*\")*$)");
+                    num_recieved++;
+                    //Only insert it into the database if there is 10 items
+                    if(values.length == 10){
+                        //Prevent insertion if any of the items are empty
+                        boolean empty_found = false;
+                        for(int i = 0;i < 10;i++){
+                            if(values[i].length() == 0){
+                                empty_found = true;
+                                break;
+                            }
+                        }
+                        //Insert the values into a new row of the database table
+                        if(!empty_found){
+                            db.insert(values,url,table);
+                            num_success++;
+                        }
+                        //Otherwise, insert the values into a bad cvs file
+                        else{
+                            db.Write_Bad_Entry(values,bad_file);
+                            num_failure++;
+                        }
                     }
                     //Otherwise, insert the values into a bad cvs file
                     else{
@@ -224,26 +231,33 @@ public class DatabaseConverter {
                         num_failure++;
                     }
                 }
-                //Otherwise, insert the values into a bad cvs file
-                else{
-                    db.Write_Bad_Entry(values,bad_file);
-                    num_failure++;
-                }
+            } catch (FileNotFoundException ex) {
+                System.out.println("CSV FILE NOT FOUND");
+            } catch (IOException ex) {
+                System.out.println("IO ERROR");
             }
-        } catch (FileNotFoundException ex) {
-            System.out.println("CSV FILE NOT FOUND");
-        } catch (IOException ex) {
-            System.out.println("IO ERROR");
-        }
-        
-        //Write the statistics to a log file
-        FileWriter log_file = null;
-        System.out.println("FINISHED!");
-        try {
-            log_file = new FileWriter(args[0]+".txt");
-            log_file.append("NUMBER OF RECORDS RECIEVED: "+num_recieved+"\n");
-            log_file.append("NUMBER OF SUCCESSES       : "+num_success+"\n");
-            log_file.append("NUMBER OF FAILURES        : "+num_failure+"\n");
+            
+            //Close the bad file writer
+            bad_file.flush();
+            bad_file.close();
+            
+            
+            //Write the statistics to a log file
+            FileWriter log_file = null;
+            System.out.println("FINISHED!");
+            try {
+                log_file = new FileWriter(args[0]+".txt");
+                log_file.write("NUMBER OF RECORDS RECIEVED: "+num_recieved+"\n");
+                log_file.write("\nNUMBER OF SUCCESSES       : "+num_success+"\n");
+                log_file.write("\nNUMBER OF FAILURES        : "+num_failure+"\n");
+                
+                log_file.flush();
+                log_file.close();
+            } catch (IOException ex) {
+                Logger.getLogger(DatabaseConverter.class.getName()).log(Level.SEVERE, null, ex);
+            }
+            
+            
         } catch (IOException ex) {
             Logger.getLogger(DatabaseConverter.class.getName()).log(Level.SEVERE, null, ex);
         }

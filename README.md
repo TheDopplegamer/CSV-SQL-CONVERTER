@@ -14,7 +14,9 @@ TO RUN:
   java -jar DatabaseConverter.jar <name of input file> <path of sqlite database> <Name of database table>
   (NOTE: The name of the input csv file should be entered without the ".csv" extension)
   ex. java -jar DatabaseConverter.jar my_data C:/Users/Documents/SQL/ My_Data_Table
-  
+
+
+Created in Netbeans 8.2
  
 This program uses the JDBC driver for the SQLite database, which can be found at https://bitbucket.org/xerial/sqlite-jdbc/src/default/
 

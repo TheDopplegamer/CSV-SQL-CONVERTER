@@ -240,7 +240,7 @@ public class DatabaseConverter {
         FileWriter log_file = null;
         System.out.println("FINISHED!");
         try {
-            log_file = new FileWriter(args[0]+".log");
+            log_file = new FileWriter(args[0]+".txt");
             log_file.append("NUMBER OF RECORDS RECIEVED: "+num_recieved+"\n");
             log_file.append("NUMBER OF SUCCESSES       : "+num_success+"\n");
             log_file.append("NUMBER OF FAILURES        : "+num_failure+"\n");
